@@ -27,12 +27,6 @@ const About = () => (
           Our Accreditations
         </Typography>
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-          <Box
-            component="img"
-            src={bidvest}
-            alt="Bidvest Prestige"
-            sx={{ height: 48 }}
-          />
           <Box component="img" src={etdp} alt="ETDP SETA" sx={{ height: 48 }} />
           <Box component="img" src={saqa} alt="SAQA" sx={{ height: 48 }} />
           <Box
@@ -58,7 +52,6 @@ const About = () => (
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={3} sx={{ textAlign: "center" }}>
             <Avatar
-              src={director}
               alt="MV Djofang"
               sx={{ width: 120, height: 120, mx: "auto", mb: 2 }}
             />

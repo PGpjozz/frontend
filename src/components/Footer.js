@@ -97,12 +97,6 @@ const Footer = () => (
           />
           <Box component="img" src={cipcLogo} alt="CIPC" sx={{ height: 32 }} />
           <Box component="img" src={qctoLogo} alt="QCTO" sx={{ height: 32 }} />
-          <Box
-            component="img"
-            src={bidvestLogo}
-            alt="Bidvest"
-            sx={{ height: 32 }}
-          />
         </Box>
         <Typography
           variant="caption"

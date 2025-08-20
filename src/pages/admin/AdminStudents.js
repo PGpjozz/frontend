@@ -30,6 +30,10 @@ import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import { groupBy } from "lodash"; // install lodash if needed: npm install lodash
+import InfoIcon from "@mui/icons-material/Info";
+import GroupIcon from "@mui/icons-material/Group";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -39,6 +43,7 @@ const AdminStudents = () => {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [filterCourse, setFilterCourse] = useState("");
+  const [filterIntake, setFilterIntake] = useState(""); // <-- Add this line
   const [sortField, setSortField] = useState("first_name");
   const [sortOrder, setSortOrder] = useState("asc");
   const [courses, setCourses] = useState([]);
@@ -132,6 +137,11 @@ const AdminStudents = () => {
     }
   };
 
+  // Get all unique intake months for filter dropdown
+  const intakeMonths = Array.from(
+    new Set(students.map((s) => s.intake_month))
+  ).filter(Boolean);
+
   // --- Search, Sort, Filter Logic ---
   const filteredStudents = students
     .filter((student) => {
@@ -149,7 +159,10 @@ const AdminStudents = () => {
           student.enrolled_courses.includes(
             courses.find((c) => c.id === filterCourse)?.name
           ));
-      return matchesSearch && matchesCourse;
+      // Filter by intake month
+      const matchesIntake =
+        !filterIntake || student.intake_month === filterIntake;
+      return matchesSearch && matchesCourse && matchesIntake;
     })
     .sort((a, b) => {
       let valA = a[sortField] || "";
@@ -161,6 +174,15 @@ const AdminStudents = () => {
       return 0;
     });
 
+  const groupedStudents = groupBy(students, "intake_month");
+
+  // Helper for intake month display
+  const formatIntakeMonth = (dateStr) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+  };
+
   if (error)
     return (
       <Box sx={{ color: "red", p: 3, textAlign: "center" }}>
@@ -169,16 +191,29 @@ const AdminStudents = () => {
     );
 
   return (
-    <Container sx={{ py: 5 }}>
-      <Typography variant="h4" gutterBottom>
-        <SchoolIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-        Enrolled Students
-      </Typography>
-      <Paper sx={{ p: 2, mb: 3, boxShadow: 2 }}>
-        <Typography variant="body1" color="text.secondary">
-          View, search, sort, filter, edit, or dismiss enrolled students. Click
-          document links to view files.
+    <Container sx={{ py: 5, minHeight: "100vh" }}>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+        <GroupIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
+        <Typography variant="h4" fontWeight={700}>
+          Enrolled Students
         </Typography>
+      </Box>
+      <Paper
+        sx={{
+          p: 2,
+          mb: 3,
+          boxShadow: 2,
+          background: "#f5f7fa",
+          borderLeft: "6px solid #1976d2",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <InfoIcon color="info" />
+          <Typography variant="body1" color="text.secondary">
+            View, search, sort, filter, edit, or dismiss enrolled students.
+            Click document links to view files.
+          </Typography>
+        </Box>
       </Paper>
       <Box
         sx={{
@@ -187,6 +222,9 @@ const AdminStudents = () => {
           mb: 2,
           flexWrap: "wrap",
           alignItems: "center",
+          background: "#f0f4ff",
+          p: 2,
+          borderRadius: 2,
         }}
       >
         <TextField
@@ -210,11 +248,40 @@ const AdminStudents = () => {
           onChange={(e) => setFilterCourse(e.target.value)}
           size="small"
           sx={{ minWidth: 200 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <FilterAltIcon />
+              </InputAdornment>
+            ),
+          }}
         >
           <MenuItem value="">All Courses</MenuItem>
           {courses.map((course) => (
             <MenuItem key={course.id} value={course.id}>
               {course.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          label="Filter by Intake"
+          value={filterIntake}
+          onChange={(e) => setFilterIntake(e.target.value)}
+          size="small"
+          sx={{ minWidth: 200 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <FilterAltIcon />
+              </InputAdornment>
+            ),
+          }}
+        >
+          <MenuItem value="">All Intakes</MenuItem>
+          {intakeMonths.map((month) => (
+            <MenuItem key={month} value={month}>
+              {formatIntakeMonth(month)}
             </MenuItem>
           ))}
         </TextField>
@@ -240,92 +307,136 @@ const AdminStudents = () => {
           {sortOrder === "asc" ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
         </IconButton>
       </Box>
-      <Table sx={{ background: "#fff", borderRadius: 2, boxShadow: 1 }}>
-        <TableHead>
-          <TableRow>
-            <TableCell>
-              <BadgeIcon fontSize="small" /> Student #
-            </TableCell>
-            <TableCell>
-              <PersonIcon fontSize="small" /> Name
-            </TableCell>
-            <TableCell>
-              <EmailIcon fontSize="small" /> Email
-            </TableCell>
-            <TableCell>
-              <BadgeIcon fontSize="small" /> ID Number
-            </TableCell>
-            <TableCell>
-              <SchoolIcon fontSize="small" /> Courses
-            </TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {filteredStudents.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} align="center">
-                <Chip label="No students found." color="warning" />
-              </TableCell>
-            </TableRow>
-          ) : (
-            filteredStudents.map((student) => (
-              <TableRow key={student.id} hover>
-                <TableCell>
-                  <Chip
-                    label={student.student_number || student.id}
-                    color="primary"
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="subtitle1" fontWeight={500}>
-                    {student.first_name} {student.last_name}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{student.email}</Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={student.id_number || "-"}
-                    color={student.id_number ? "success" : "default"}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  {student.enrolled_courses
-                    ? student.enrolled_courses.join(", ")
-                    : "-"}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<EditIcon />}
-                    sx={{ mr: 1 }}
-                    onClick={() => handleView(student)}
-                  >
-                    View/Edit
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    startIcon={<DeleteIcon />}
-                    onClick={() => {
-                      setSelectedStudent(student);
-                      setConfirmOpen(true);
-                    }}
-                  >
-                    Dismiss
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+      {Object.keys(groupedStudents).length === 0 ? (
+        <Box sx={{ textAlign: "center", py: 3 }}>
+          <Chip label="No students found." color="warning" />
+        </Box>
+      ) : (
+        Object.keys(groupedStudents).map((month) => (
+          <Box key={month} sx={{ mb: 4 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 2,
+                color: "#1976d2",
+                fontWeight: 600,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+              }}
+            >
+              Intake: {formatIntakeMonth(month)}
+            </Typography>
+            <Table sx={{ background: "#fff", borderRadius: 2, boxShadow: 1 }}>
+              <TableHead>
+                <TableRow sx={{ background: "#e3eafc" }}>
+                  <TableCell>
+                    <BadgeIcon fontSize="small" /> Student #
+                  </TableCell>
+                  <TableCell>
+                    <PersonIcon fontSize="small" /> Name
+                  </TableCell>
+                  <TableCell>
+                    <EmailIcon fontSize="small" /> Email
+                  </TableCell>
+                  <TableCell>
+                    <BadgeIcon fontSize="small" /> ID Number
+                  </TableCell>
+                  <TableCell>
+                    <SchoolIcon fontSize="small" /> Courses
+                  </TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {groupedStudents[month]
+                  .filter((student) => {
+                    // Search by name, email, id_number
+                    const searchText = search.toLowerCase();
+                    const matchesSearch =
+                      student.first_name?.toLowerCase().includes(searchText) ||
+                      student.last_name?.toLowerCase().includes(searchText) ||
+                      student.email?.toLowerCase().includes(searchText) ||
+                      student.id_number?.toLowerCase().includes(searchText);
+                    // Filter by course
+                    const matchesCourse =
+                      !filterCourse ||
+                      (student.enrolled_courses &&
+                        student.enrolled_courses.includes(
+                          courses.find((c) => c.id === filterCourse)?.name
+                        ));
+                    // Filter by intake month
+                    const matchesIntake =
+                      !filterIntake || student.intake_month === filterIntake;
+                    return matchesSearch && matchesCourse && matchesIntake;
+                  })
+                  .sort((a, b) => {
+                    let valA = a[sortField] || "";
+                    let valB = b[sortField] || "";
+                    if (typeof valA === "string") valA = valA.toLowerCase();
+                    if (typeof valB === "string") valB = valB.toLowerCase();
+                    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+                    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+                    return 0;
+                  })
+                  .map((student) => (
+                    <TableRow key={student.id} hover>
+                      <TableCell>
+                        <Chip
+                          label={student.student_number || student.id}
+                          color="primary"
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="subtitle1" fontWeight={500}>
+                          {student.first_name} {student.last_name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{student.email}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={student.id_number || "-"}
+                          color={student.id_number ? "success" : "default"}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {student.enrolled_courses
+                          ? student.enrolled_courses.join(", ")
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<EditIcon />}
+                          sx={{ mr: 1 }}
+                          onClick={() => handleView(student)}
+                        >
+                          View/Edit
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          size="small"
+                          startIcon={<DeleteIcon />}
+                          onClick={() => {
+                            setSelectedStudent(student);
+                            setConfirmOpen(true);
+                          }}
+                        >
+                          Dismiss
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </Box>
+        ))
+      )}
 
       {/* View/Edit Dialog */}
       <Dialog
@@ -369,6 +480,13 @@ const AdminStudents = () => {
             sx={{ mb: 2 }}
             inputProps={{ maxLength: 13, pattern: "\\d{13}" }}
             helperText="ID number must be exactly 13 digits"
+          />
+          <TextField
+            label="Intake Month"
+            value={formatIntakeMonth(selectedStudent?.intake_month)}
+            fullWidth
+            sx={{ mb: 2 }}
+            InputProps={{ readOnly: true }}
           />
           <Typography variant="subtitle1" sx={{ mt: 2 }}>
             Documents:

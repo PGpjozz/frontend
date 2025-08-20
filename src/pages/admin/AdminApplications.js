@@ -22,6 +22,16 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
 const AdminApplications = () => {
   const [applications, setApplications] = useState([]);
   const [error, setError] = useState("");
@@ -109,6 +119,8 @@ const AdminApplications = () => {
             <TableCell>
               <SchoolIcon fontSize="small" /> Course
             </TableCell>
+            <TableCell>Intake Month</TableCell>
+            <TableCell>Application Date</TableCell> {/* <-- NEW COLUMN */}
             <TableCell>
               <DescriptionIcon fontSize="small" /> CV
             </TableCell>
@@ -124,7 +136,7 @@ const AdminApplications = () => {
         <TableBody>
           {applications.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} align="center">
+              <TableCell colSpan={10} align="center">
                 <Chip label="No applications found." color="warning" />
               </TableCell>
             </TableRow>
@@ -155,6 +167,15 @@ const AdminApplications = () => {
                     size="small"
                   />
                 </TableCell>
+                <TableCell>
+                  {app.intake_month
+                    ? new Date(app.intake_month).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                      })
+                    : "-"}
+                </TableCell>
+                <TableCell>{formatDate(app.submitted_at)}</TableCell>
                 <TableCell>
                   {app.cv ? (
                     <a
